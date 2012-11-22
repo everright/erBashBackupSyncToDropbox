@@ -11,21 +11,26 @@ MYSQL_PASS="userpassword"  #MySQL Password
 MYSQL_DUMP="/usr/local/mysql5.5.10/bin/mysqldump" #mysqldump command
 DATABASES="wp_everright wp_everright_cn" #Backup databases, multiple separated by a space
 LIMIT_DAYS=7 #The number of days to retain the backup files
-NOW=$(date +%Y-%m-%d-%k-%M)
+NOW=`date "+%F-%H-%M"`
 BACKUP_FILE="backup_$NOW.tar.gz" #Backup file name
 DATABASE_FILE="database_$NOW.sql" #Database export file name
 LOG_FILE="/tmp/site_backup.log" #Log file
 
+# Current time
+function now() {
+    date "+%F %T.%N"  
+}
+
 # Backup files
 function do_backup() {
-    echo "[`date +%Y-%m-%d-%T`] Dumping databases..." > $LOG_FILE
+    echo "[$(now)] Dumping databases..." > $LOG_FILE
     cd $BACKUP_DST
     $MYSQL_DUMP -h$MYSQL_SERVER -u$MYSQL_USER -p$MYSQL_PASS --add-drop-table --databases $DATABASES > $DATABASE_FILE
-    echo "[`date +%Y-%m-%d-%T`] Packing files..." >> $LOG_FILE
+    echo "[$(now)] Packing files..." >> $LOG_FILE
     tar -czf $BACKUP_FILE $BACKUP_SRC $DATABASE_FILE
-    echo "[`date +%Y-%m-%d-%T`] Upload files..." >> $LOG_FILE
+    echo "[$(now)] Upload files..." >> $LOG_FILE
     $DROPBOX_UPLOADER upload "$BACKUP_FILE" "$DROPBOX_DIR/$BACKUP_FILE" >> $LOG_FILE
-    echo "[`date +%Y-%m-%d-%T`] Cleaning the backups..." >> $LOG_FILE
+    echo "[$(now)] Cleaning the backups..." >> $LOG_FILE
     rm -rf "$DATABASE_FILE"
 }
 
@@ -35,9 +40,9 @@ function do_rsync() {
     for filename in $files
     do
         name=$(basename $filename)
-        echo "[`date +%Y-%m-%d-%T`] Delete local file $name" >> $LOG_FILE
+        echo "[$(now)] Delete local file $name" >> $LOG_FILE
         rm -rf "$BACKUP_DST/$name"
-        echo "[`date +%Y-%m-%d-%T`] Delete remote file $name on dropbox" >> $LOG_FILE
+        echo "[$(now)] Delete remote file $name on dropbox" >> $LOG_FILE
         $DROPBOX_UPLOADER delete "$DROPBOX_DIR/$name" >> $LOG_FILE
     done
 }
